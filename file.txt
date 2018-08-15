@@ -1,0 +1,69 @@
+"""
+File Comaparision
+
+Create Date: 15-08-2018 18:40:35.435310,
+Author : Sai,
+"""
+# Dependencys
+import pandas as pd
+
+class Datadifference():
+
+	def files(self,getLinuxFilename,getSolarisFilename,getOpenSourceFilename):
+		excelFiles = [getLinuxFilename,getSolarisFilename]
+		for files in excelFiles:
+			if 'xls' in files or 'xlsx' in files:
+				data_xls = pd.read_excel(files)
+				data_xls.to_csv(files.split('.')[0]+'.csv', encoding='utf-8')
+				files = files.split('.')[0]+'.csv'
+			elif 'csv' not in files or 'csv' not in getOpenSourceFilename:
+				raise Exception('This is the not the expected file formate,please pass xlsx/xls/csv files only.')
+			print "Please wait while we process the file "+files
+			df1 = pd.read_csv(files,index_col=0)
+			df2 = pd.read_csv(getOpenSourceFilename,index_col=0)
+			if 'solaris' in files:
+				df2 = df2[~df2['OS'].isin(['AIX','Red Hat(Linux)','RedHat Linux 7.x','SuSE(Linux)'])]
+				df1 = df1[~df1['OS'].isin(['AIX','Red Hat(Linux)','RedHat Linux 7.x','SuSE(Linux)'])]
+			else:
+				df2 = df2[~df2['OS'].isin(['AIX','SunOS'])]
+				df1 = df1[~df1['OS'].isin(['AIX','SunOS'])]				
+			df2['OS'] = ['Linux' if str(x) in [ 'Red Hat(Linux)','RedHat Linux 7.x'] else x for x in df2['OS']]
+			df1_indexes = []
+			df2_indexes = []
+			for i, row in df1.iterrows():
+				if 'solaris' in files:
+					if str(row['OS']) not in ['AIX','Red Hat(Linux)','RedHat Linux 7.x','SuSE(Linux)']:
+						findset =  df2[(df2['Hostname'].str.lower()  == df1.iloc[i]['Hostname']) & (df2['OS'] == df1.iloc[i]['OS']) & (df2['ENV'] == df1.iloc[i]['ENV']) & (df2['AppCode'] == df1.iloc[i]['AppCode']) & (df2['Unix Service Window'] == df1.iloc[i]['Service Window']) ] 
+				else:
+					if str(row['OS']) not in ['AIX','SunOS']:
+						findset =  df2[(df2['Hostname'].str.lower()  == df1.iloc[i]['Hostname']) & (df2['OS'] == df1.iloc[i]['OS']) & (df2['ENV'] == df1.iloc[i]['ENV']) & (df2['AppCode'] == df1.iloc[i]['AppCode']) & (df2['Unix Service Window'] == df1.iloc[i]['Service Windows']) ] 
+				if  findset.empty == False:
+					for i1, row1 in findset.iterrows():
+						df2_indexes.append(i1) # collecting the rows if matched in opensource.
+					df1_indexes.append(i) # collecting the rows if matched in .
+		# Droping the rows if matched
+			df2.drop(df2.index[df1_indexes],inplace=True)
+			df1.drop(df1.index[df1_indexes],inplace=True)
+			if 'solaris' in files:
+				excel_file = '/Users/mm411/Downloads/csvfiles/solaris_Unmatched_records.csv'
+				overalsource_excel_file = '/Users/mm411/Downloads/csvfiles/solaris_overalsource_Unmatched_records.csv'
+			else:	
+				excel_file = '/Users/mm411/Downloads/csvfiles/linux_Unmatched_records.csv'
+				overalsource_excel_file = '/Users/mm411/Downloads/csvfiles/linux_overalsource_Unmatched_records.csv'
+			df1.to_csv(excel_file, encoding='utf-8')				
+			df2.to_csv(overalsource_excel_file, encoding='utf-8')
+			print "Processing compleed for "+files
+			print "\n"*1
+
+datadiffObject = Datadifference()
+
+getLinuxFilename = str(raw_input("please give the path off DATA LINUX xlsx/xls file,Please make sure thier are no spaces between filename "))
+getSolarisFilename = str(raw_input("please give the path off DATA Solaris xlsx/xls file,Please make sure thier are no spaces between filename "))
+getOpenSourceFilename = str(raw_input("please give the path off OPENSOURCE csv file,Please make sure thier are no spaces between filename "))
+# Pass the fiel paths as arguments.
+datadiffObject.files(getLinuxFilename,getSolarisFilename,getOpenSourceFilename)
+
+
+
+
+
